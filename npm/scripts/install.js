@@ -6,7 +6,7 @@ const path = require("path");
 const os = require("os");
 const { execSync } = require("child_process");
 
-const REPO = "danwoo/adofai-cli";
+const REPO = "3289david/adofai-cli";
 const VERSION = "v1.0.0";
 
 function getPlatformTarget() {

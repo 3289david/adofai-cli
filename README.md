@@ -52,7 +52,7 @@ cargo install adofai-cli
 
 ### Binary download
 
-Grab the latest release from [GitHub Releases](https://github.com/danwoo/adofai-cli/releases).
+Grab the latest release from [GitHub Releases](https://github.com/3289david/adofai-cli/releases).
 
 ## Quick Start
 
@@ -261,7 +261,7 @@ src/
 ## Building from Source
 
 ```bash
-git clone https://github.com/danwoo/adofai-cli.git
+git clone https://github.com/3289david/adofai-cli.git
 cd adofai-cli
 cargo build --release
 ./target/release/adofai --help

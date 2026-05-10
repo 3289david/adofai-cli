@@ -22,9 +22,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/danwoo/adofai-cli.git"
+    "url": "git+https://github.com/3289david/adofai-cli.git"
   },
-  "homepage": "https://danwoo.github.io/adofai-cli",
+  "homepage": "https://3289david.github.io/adofai-cli",
   "os": [
     "darwin",
     "linux",

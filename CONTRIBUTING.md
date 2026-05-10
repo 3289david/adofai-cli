@@ -5,7 +5,7 @@ Thanks for your interest in contributing! This project is a terminal-based ADOFA
 ## Getting Started
 
 ```bash
-git clone https://github.com/danwoo/adofai-cli.git
+git clone https://github.com/3289david/adofai-cli.git
 cd adofai-cli
 cargo build
 cargo run -- --help

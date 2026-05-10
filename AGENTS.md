@@ -125,4 +125,4 @@ Alternatively, `pathData` encodes angles as single characters (R=0°, U=90°, L=
 - **npm**: `npm install -g adofai-terminal` (wrapper that downloads the Rust binary)
 - **Homebrew**: `brew install danwoo/tap/adofai-cli`
 - **Binary releases**: GitHub Releases (cross-compiled for macOS, Linux, Windows)
-- **Website**: GitHub Pages at `danwoo.github.io/adofai-cli`
+- **Website**: GitHub Pages at `3289david.github.io/adofai-cli`
