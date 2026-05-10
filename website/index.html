@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADOFAI CLI — Cinematic Terminal Engine</title>
+  <meta name="description" content="A cinematic terminal-based A Dance of Fire and Ice engine with shader-like effects, full map editor, and replay system.">
+  <meta name="theme-color" content="#0a0014">
+  <meta property="og:title" content="ADOFAI CLI — Cinematic Terminal Engine">
+  <meta property="og:description" content="Play, edit, and create ADOFAI levels entirely in your terminal. Shader-like effects, 120 FPS rendering, braille graphics.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      --bg: #0a0014;
+      --bg-card: #12001f;
+      --bg-code: #1a0030;
+      --text: #e0d8f0;
+      --text-dim: #8070a0;
+      --accent: #ff3080;
+      --accent2: #00ffc8;
+      --accent3: #8040ff;
+      --accent4: #ffcc00;
+      --glow: rgba(255, 48, 128, 0.3);
+      --glow2: rgba(0, 255, 200, 0.3);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    .scanline {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 1000;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.03) 2px,
+        rgba(0, 0, 0, 0.03) 4px
+      );
+    }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+      top: 20%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: pulse 4s ease-in-out infinite;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--glow2) 0%, transparent 70%);
+      bottom: 10%;
+      right: 20%;
+      animation: pulse 5s ease-in-out infinite reverse;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+      50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 10;
+    }
+
+    .logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 4rem;
+      font-weight: 700;
+      letter-spacing: -2px;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 60px var(--glow);
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+      color: var(--text-dim);
+      max-width: 500px;
+      margin: 0 auto 2rem;
+    }
+
+    .terminal-preview {
+      background: var(--bg-code);
+      border: 1px solid rgba(128, 64, 255, 0.3);
+      border-radius: 12px;
+      padding: 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      text-align: left;
+      max-width: 600px;
+      margin: 2rem auto;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .terminal-preview::before {
+      content: '● ● ●';
+      display: block;
+      margin-bottom: 1rem;
+      letter-spacing: 6px;
+      color: var(--accent);
+      font-size: 0.7rem;
+    }
+
+    .term-line { margin: 2px 0; white-space: pre; }
+    .term-prompt { color: var(--accent2); }
+    .term-cmd { color: var(--text); }
+    .term-output { color: var(--text-dim); }
+    .term-highlight { color: var(--accent4); }
+    .term-accent { color: var(--accent); }
+    .term-green { color: #50ff50; }
+
+    .install-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.8rem 1.6rem;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent3));
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px var(--glow);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--accent2);
+      border-color: var(--accent2);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(0, 255, 200, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .features {
+      padding: 6rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 3rem;
+      color: var(--accent2);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(128, 64, 255, 0.15);
+      border-radius: 12px;
+      padding: 2rem;
+      transition: all 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--accent3);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 40px rgba(128, 64, 255, 0.15);
+    }
+
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .feature-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--accent2);
+    }
+
+    .feature-desc {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+    }
+
+    .docs {
+      padding: 6rem 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .doc-section {
+      margin-bottom: 3rem;
+    }
+
+    .doc-section h3 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.3rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(255, 48, 128, 0.2);
+    }
+
+    .doc-section p {
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-code);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: var(--accent2);
+    }
+
+    pre {
+      background: var(--bg-code);
+      border: 1px solid rgba(128, 64, 255, 0.2);
+      border-radius: 8px;
+      padding: 1.5rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .command-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+
+    .command-table th, .command-table td {
+      padding: 0.7rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(128, 64, 255, 0.1);
+    }
+
+    .command-table th {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent2);
+      font-weight: 600;
+    }
+
+    .command-table td:first-child {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent);
+    }
+
+    .command-table td:last-child {
+      color: var(--text-dim);
+    }
+
+    .themes-showcase {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .theme-card {
+      background: var(--bg-code);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      border: 1px solid rgba(128, 64, 255, 0.15);
+    }
+
+    .theme-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .theme-preview {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      height: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      border-top: 1px solid rgba(128, 64, 255, 0.1);
+    }
+
+    footer a {
+      color: var(--accent2);
+      text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+      .logo { font-size: 2.5rem; }
+      .features-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+
+  <section class="hero">
+    <div class="hero-content">
+      <h1 class="logo">ADOFAI CLI</h1>
+      <p class="subtitle">
+        Cinematic terminal-based A Dance of Fire and Ice engine.
+        Play, edit, and create levels entirely in your terminal.
+      </p>
+
+      <div class="terminal-preview">
+        <div class="term-line"><span class="term-prompt">$</span> <span class="term-cmd">adofai play level.adofai --theme neon</span></div>
+        <div class="term-line"></div>
+        <div class="term-line"><span class="term-output">╭─────────────────────────────────╮</span></div>
+        <div class="term-line"><span class="term-output">│</span>     <span class="term-accent">ADOFAI Terminal Engine</span>       <span class="term-output">│</span></div>
+        <div class="term-line"><span class="term-output">├─────────────────────────────────┤</span></div>
+        <div class="term-line"><span class="term-output">│</span> Song: <span class="term-highlight">My Song</span>                   <span class="term-output">│</span></div>
+        <div class="term-line"><span class="term-output">│</span> BPM:  <span class="term-green">180</span>                       <span class="term-output">│</span></div>
+        <div class="term-line"><span class="term-output">│</span> Theme: <span class="term-accent">neon</span>                    <span class="term-output">│</span></div>
+        <div class="term-line"><span class="term-output">╰─────────────────────────────────╯</span></div>
+        <div class="term-line"></div>
+        <div class="term-line">      <span style="color:#ff50ff">●</span>────<span style="color:#00ffc8">●</span>────<span style="color:#ff50ff">●</span></div>
+        <div class="term-line">                ╲</div>
+        <div class="term-line">                 <span style="color:#00ffc8">●</span></div>
+        <div class="term-line">                ╱</div>
+        <div class="term-line">      <span style="color:#ff50ff">●</span>────<span style="color:#00ffc8">●</span></div>
+      </div>
+
+      <div class="install-buttons">
+        <a href="#install" class="btn btn-primary">Install Now</a>
+        <a href="#docs" class="btn btn-secondary">Documentation</a>
+        <a href="https://github.com/danwoo/adofai-cli" class="btn btn-secondary">GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" id="features">
+    <h2 class="section-title">// Features</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎮</div>
+        <div class="feature-title">Full ADOFAI Player</div>
+        <div class="feature-desc">Play any .adofai level in your terminal with perfect timing accuracy, orbit physics, and real-time scoring.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✏️</div>
+        <div class="feature-title">Vim-Style Editor</div>
+        <div class="feature-desc">Create and edit levels with vim-like keybindings, undo tree, mouse support, and real-time preview.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎨</div>
+        <div class="feature-title">Shader-Like Effects</div>
+        <div class="feature-desc">Bloom, scanlines, CRT distortion, chromatic aberration, vignette, screen shake — all in your terminal.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔥</div>
+        <div class="feature-title">Particle System</div>
+        <div class="feature-desc">Hit sparks, fire trails, ice crystals, rainbow particles — cinematic feedback for every input.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📹</div>
+        <div class="feature-title">Cinematic Camera</div>
+        <div class="feature-desc">Smooth follow, zoom, rotation, pulse, and shake. Every ADOFAI camera event is supported.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🖥️</div>
+        <div class="feature-title">120 FPS Rendering</div>
+        <div class="feature-desc">Custom framebuffer with diff rendering. Only changed cells are redrawn — buttery smooth at 120 FPS.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎵</div>
+        <div class="feature-title">Audio Engine</div>
+        <div class="feature-desc">Built-in audio playback with hitsounds. Supports MP3, WAV, OGG, and FLAC formats.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⏪</div>
+        <div class="feature-title">Replay System</div>
+        <div class="feature-desc">Record and replay your runs with slow motion, frame advance, and hit analysis.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎭</div>
+        <div class="feature-title">7 Built-in Themes</div>
+        <div class="feature-desc">Neon, Retro, Minimal, Fire, Ice, Synthwave, Matrix — each with unique post-processing effects.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Level Analyzer</div>
+        <div class="feature-desc">BPM graphs, angle distribution, density visualization, event summaries — understand any level at a glance.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧩</div>
+        <div class="feature-title">Full .adofai Support</div>
+        <div class="feature-desc">Parses and generates real ADOFAI files. angleData, pathData, actions, decorations — everything.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📦</div>
+        <div class="feature-title">Single Binary</div>
+        <div class="feature-desc">Written in Rust. Zero runtime dependencies. Cross-platform. One binary, instant startup.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="docs" id="install">
+    <h2 class="section-title">// Installation</h2>
+
+    <div class="doc-section">
+      <h3>Homebrew (macOS/Linux)</h3>
+      <pre><code>brew tap danwoo/tap
+brew install adofai-cli</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h3>npm (Cross-platform)</h3>
+      <pre><code>npm install -g adofai-terminal</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h3>Cargo (From source)</h3>
+      <pre><code>cargo install adofai-cli</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h3>Binary (Download)</h3>
+      <p>Download the latest release for your platform from <a href="https://github.com/danwoo/adofai-cli/releases" style="color: var(--accent2)">GitHub Releases</a>.</p>
+    </div>
+  </section>
+
+  <section class="docs" id="docs">
+    <h2 class="section-title">// Documentation</h2>
+
+    <div class="doc-section">
+      <h3>Quick Start</h3>
+      <pre><code># Create a new level
+adofai new --bpm 180
+
+# Edit the level
+adofai edit untitled.adofai
+
+# Play the level
+adofai play untitled.adofai
+
+# Play with a theme
+adofai play level.adofai --theme neon
+
+# Analyze a level
+adofai analyze level.adofai</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h3>Commands</h3>
+      <table class="command-table">
+        <tr><th>Command</th><th>Description</th></tr>
+        <tr><td>play &lt;file&gt;</td><td>Play an ADOFAI level in the terminal</td></tr>
+        <tr><td>edit &lt;file&gt;</td><td>Open the map editor</td></tr>
+        <tr><td>new</td><td>Create a new empty level</td></tr>
+        <tr><td>render &lt;file&gt;</td><td>Render a level (auto-play capture)</td></tr>
+        <tr><td>replay &lt;file&gt;</td><td>View a saved replay</td></tr>
+        <tr><td>theme &lt;name&gt;</td><td>Preview and info about a theme</td></tr>
+        <tr><td>analyze &lt;file&gt;</td><td>Show level statistics and analysis</td></tr>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h3>Play Controls</h3>
+      <table class="command-table">
+        <tr><th>Key</th><th>Action</th></tr>
+        <tr><td>Space / J / K / D / F</td><td>Hit (input)</td></tr>
+        <tr><td>Arrow keys</td><td>Hit (input)</td></tr>
+        <tr><td>P / Esc</td><td>Pause / Resume</td></tr>
+        <tr><td>R</td><td>Restart</td></tr>
+        <tr><td>A</td><td>Toggle auto-play</td></tr>
+        <tr><td>Q</td><td>Quit</td></tr>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h3>Editor Controls</h3>
+      <table class="command-table">
+        <tr><th>Key</th><th>Action</th></tr>
+        <tr><td>h / j / k / l</td><td>Navigate tiles</td></tr>
+        <tr><td>a</td><td>Add tile</td></tr>
+        <tr><td>d / Delete</td><td>Delete tile</td></tr>
+        <tr><td>r / R</td><td>Rotate tile ±45°</td></tr>
+        <tr><td>t</td><td>Toggle twirl</td></tr>
+        <tr><td>i</td><td>Insert mode (directional)</td></tr>
+        <tr><td>e</td><td>Event edit mode</td></tr>
+        <tr><td>:</td><td>Command mode</td></tr>
+        <tr><td>Space / Tab</td><td>Preview (test play)</td></tr>
+        <tr><td>u</td><td>Undo</td></tr>
+        <tr><td>Ctrl+S</td><td>Save</td></tr>
+        <tr><td>Ctrl+Z / Ctrl+Y</td><td>Undo / Redo</td></tr>
+        <tr><td>+/-</td><td>Zoom in/out</td></tr>
+        <tr><td>Mouse scroll</td><td>Zoom</td></tr>
+        <tr><td>Mouse click</td><td>Select tile</td></tr>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h3>Editor Commands</h3>
+      <pre><code>:bpm 240          Set BPM at cursor
+:twirl            Toggle twirl at cursor
+:planet multi 3   Set multi-planet (3 planets)
+:song My Song     Set song title
+:artist Artist    Set artist name
+:offset 100       Set offset (ms)
+:w                Save
+:q                Quit (warns if unsaved)
+:wq               Save and quit
+:q!               Force quit</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h3>Themes</h3>
+      <div class="themes-showcase">
+        <div class="theme-card">
+          <div class="theme-preview" style="background: linear-gradient(135deg, #0a0014, #140028); color: #00ffc8;">
+            ●────●────●
+          </div>
+          <div class="theme-name" style="color: #00ffc8;">neon</div>
+        </div>
+        <div class="theme-card">
+          <div class="theme-preview" style="background: #000a00; color: #00c800;">
+            ●────●────●
+          </div>
+          <div class="theme-name" style="color: #00ff00;">retro</div>
+        </div>
+        <div class="theme-card">
+          <div class="theme-preview" style="background: #141414; color: #c8c8c8;">
+            ●────●────●
+          </div>
+          <div class="theme-name" style="color: #ffffff;">minimal</div>
+        </div>
+        <div class="theme-card">
+          <div class="theme-preview" style="background: #140500; color: #ff7800;">
+            ●────●────●
+          </div>
+          <div class="theme-name" style="color: #ff7800;">fire</div>
+        </div>
+        <div class="theme-card">
+          <div class="theme-preview" style="background: #050a19; color: #64c8ff;">
+            ●────●────●
+          </div>
+          <div class="theme-name" style="color: #64c8ff;">ice</div>
+        </div>
+        <div class="theme-card">
+          <div class="theme-preview" style="background: #0f001e; color: #ff0080;">
+            ●────●────●
+          </div>
+          <div class="theme-name" style="color: #ff0080;">synthwave</div>
+        </div>
+        <div class="theme-card">
+          <div class="theme-preview" style="background: #000500; color: #00ff41;">
+            ●────●────●
+          </div>
+          <div class="theme-name" style="color: #00ff41;">matrix</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <h3>Supported Events</h3>
+      <p>ADOFAI CLI supports all major ADOFAI events:</p>
+      <table class="command-table">
+        <tr><th>Event</th><th>Support</th></tr>
+        <tr><td>SetSpeed (BPM)</td><td>Full</td></tr>
+        <tr><td>Twirl</td><td>Full</td></tr>
+        <tr><td>MultiPlanet</td><td>Full</td></tr>
+        <tr><td>Flash</td><td>Full</td></tr>
+        <tr><td>MoveCamera</td><td>Full</td></tr>
+        <tr><td>ShakeScreen</td><td>Full</td></tr>
+        <tr><td>Bloom</td><td>Full</td></tr>
+        <tr><td>SetFilter</td><td>Full</td></tr>
+        <tr><td>SetTrackColor</td><td>Full</td></tr>
+        <tr><td>Pause</td><td>Full</td></tr>
+        <tr><td>Hold</td><td>Full</td></tr>
+        <tr><td>Checkpoint</td><td>Full</td></tr>
+        <tr><td>PositionTrack</td><td>Full</td></tr>
+        <tr><td>ScaleRadius</td><td>Full</td></tr>
+        <tr><td>Decorations</td><td>Parsed</td></tr>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h3>Architecture</h3>
+      <pre><code>adofai-cli/
+├── src/
+│   ├── renderer/     Custom framebuffer + diff rendering
+│   │   ├── framebuffer    Cell-based terminal buffer
+│   │   ├── pipeline       Render pipeline orchestration
+│   │   ├── post_process   Bloom, CRT, scanlines, glitch
+│   │   ├── particles      Spark, fire, ice, rainbow
+│   │   └── unicode_pixel  Braille + block rendering
+│   ├── engine/       Game engine
+│   │   ├── game           Main game loop (120 FPS)
+│   │   ├── tile           Tile geometry + rendering
+│   │   ├── planet         Orbit physics + multi-planet
+│   │   ├── timing         Beat sync + hit accuracy
+│   │   └── input          Key + mouse handling
+│   ├── editor/       Map editor
+│   │   ├── editor_state   Full TUI editor with modes
+│   │   └── undo           Branch-based undo tree
+│   ├── parser/       .adofai file parser
+│   │   ├── adofai         Level file I/O
+│   │   └── events         All event type definitions
+│   ├── camera/       Cinematic camera system
+│   ├── effects/      Visual effects + themes
+│   ├── audio/        Rodio-based audio engine
+│   ├── replay/       Record/playback system
+│   └── cli/          CLI command handlers</code></pre>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      Built with Rust. Open source on
+      <a href="https://github.com/danwoo/adofai-cli">GitHub</a>.
+    </p>
+    <p style="margin-top: 0.5rem;">
+      MIT License &middot; Made by danwoo
+    </p>
+  </footer>
+</body>
+</html>

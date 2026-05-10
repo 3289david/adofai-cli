@@ -1,0 +1,33 @@
+[package]
+name = "adofai-cli"
+version = "1.0.0"
+edition = "2021"
+authors = ["danwoo <davideom0414@gmail.com>"]
+description = "Cinematic terminal-based A Dance of Fire and Ice engine with shader-like effects, full map editor, and replay system"
+license = "MIT"
+repository = "https://github.com/danwoo/adofai-cli"
+homepage = "https://danwoo.github.io/adofai-cli"
+keywords = ["adofai", "terminal", "game", "rhythm", "tui"]
+categories = ["games", "command-line-utilities"]
+readme = "README.md"
+
+[[bin]]
+name = "adofai"
+path = "src/main.rs"
+
+[dependencies]
+crossterm = "0.28"
+ratatui = "0.29"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rodio = "0.19"
+anyhow = "1"
+rand = "0.8"
+unicode-width = "0.2"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
+codegen-units = 1

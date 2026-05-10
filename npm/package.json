@@ -1,0 +1,40 @@
+{
+  "name": "adofai-terminal",
+  "version": "1.0.0",
+  "description": "Cinematic terminal-based A Dance of Fire and Ice engine with shader-like effects, full map editor, and replay system",
+  "bin": {
+    "adofai": "bin/cli.js"
+  },
+  "scripts": {
+    "postinstall": "node scripts/install.js"
+  },
+  "keywords": [
+    "adofai",
+    "terminal",
+    "game",
+    "rhythm",
+    "tui",
+    "music",
+    "editor",
+    "cli"
+  ],
+  "author": "danwoo <davideom0414@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danwoo/adofai-cli.git"
+  },
+  "homepage": "https://danwoo.github.io/adofai-cli",
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "files": [
+    "bin/",
+    "scripts/"
+  ]
+}

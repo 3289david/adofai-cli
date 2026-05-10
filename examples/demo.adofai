@@ -1,0 +1,43 @@
+{
+  "angleData": [0, 0, 0, 0, 90, 90, 0, 0, 315, 315, 0, 0, 0, 90, 180, 180, 180, 270, 0, 0, 45, 45, 0, 0, 0, 0, 270, 270, 0, 0, 0, 0],
+  "settings": {
+    "version": 13,
+    "artist": "ADOFAI CLI",
+    "song": "Terminal Demo",
+    "author": "danwoo",
+    "bpm": 160,
+    "offset": 0,
+    "songFilename": "",
+    "pitch": 100,
+    "volume": 100,
+    "hitsound": "Kick",
+    "countSound": "Cowbell",
+    "countdownTicks": 4,
+    "bgColor": "0a0014",
+    "trackColor": "00ffc8",
+    "secondaryTrackColor": "ff3080",
+    "trackColorType": "Single",
+    "trackStyle": "Standard",
+    "trackAnimation": "None",
+    "beatsAhead": 5,
+    "beatsBehind": 3,
+    "bgImage": "",
+    "relativeTo": "Player",
+    "position": [0, 0],
+    "rotation": 0,
+    "zoom": 120,
+    "difficulty": 3
+  },
+  "actions": [
+    { "floor": 5, "eventType": "Twirl" },
+    { "floor": 8, "eventType": "SetSpeed", "speedType": "Bpm", "beatsPerMinute": 200 },
+    { "floor": 12, "eventType": "Flash", "duration": 1, "plane": "Foreground", "startColor": "ffffff", "startOpacity": 100, "endColor": "ffffff", "endOpacity": 0, "ease": "Linear" },
+    { "floor": 16, "eventType": "ShakeScreen", "duration": 1, "strength": 50, "intensity": 100, "fadeOut": "Enabled" },
+    { "floor": 16, "eventType": "Twirl" },
+    { "floor": 20, "eventType": "SetSpeed", "speedType": "Bpm", "beatsPerMinute": 240 },
+    { "floor": 24, "eventType": "MoveCamera", "duration": 2, "relativeTo": "Player", "position": [0, 0], "rotation": 15, "zoom": 150, "angleOffset": 0, "ease": "OutCubic" },
+    { "floor": 28, "eventType": "Flash", "duration": 0.5, "plane": "Foreground", "startColor": "ff3080", "startOpacity": 80, "endColor": "ff3080", "endOpacity": 0, "ease": "Linear" },
+    { "floor": 30, "eventType": "SetSpeed", "speedType": "Bpm", "beatsPerMinute": 160 }
+  ],
+  "decorations": []
+}
