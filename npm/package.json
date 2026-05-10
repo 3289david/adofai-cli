@@ -1,6 +1,6 @@
 {
   "name": "adofai-terminal",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Cinematic terminal-based A Dance of Fire and Ice engine with shader-like effects, full map editor, and replay system",
   "bin": {
     "adofai": "bin/cli.js"
