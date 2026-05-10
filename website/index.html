@@ -4,27 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ADOFAI CLI — Cinematic Terminal Engine</title>
-  <meta name="description" content="A cinematic terminal-based A Dance of Fire and Ice engine with shader-like effects, full map editor, and replay system.">
+  <meta name="description" content="Play, edit, and create A Dance of Fire and Ice levels entirely in your terminal. 120 FPS rendering, shader-like effects, vim-style editor.">
   <meta name="theme-color" content="#0a0014">
   <meta property="og:title" content="ADOFAI CLI — Cinematic Terminal Engine">
-  <meta property="og:description" content="Play, edit, and create ADOFAI levels entirely in your terminal. Shader-like effects, 120 FPS rendering, braille graphics.">
+  <meta property="og:description" content="Terminal-native ADOFAI engine with bloom, particles, 120 FPS diff rendering, and a full vim-style editor. Single 1.1MB binary.">
   <meta property="og:type" content="website">
+  <meta property="og:url" content="https://3289david.github.io/adofai-cli">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
     :root {
-      --bg: #0a0014;
-      --bg-card: #12001f;
-      --bg-code: #1a0030;
-      --text: #e0d8f0;
-      --text-dim: #8070a0;
-      --accent: #ff3080;
+      --bg: #060010;
+      --bg-card: #0d001a;
+      --bg-code: #130022;
+      --text: #e8e0f8;
+      --text-dim: #7060a0;
+      --accent: #ff2070;
       --accent2: #00ffc8;
-      --accent3: #8040ff;
+      --accent3: #7030ff;
       --accent4: #ffcc00;
-      --glow: rgba(255, 48, 128, 0.3);
-      --glow2: rgba(0, 255, 200, 0.3);
+      --glow: rgba(255, 32, 112, 0.4);
+      --glow2: rgba(0, 255, 200, 0.35);
+      --glow3: rgba(112, 48, 255, 0.3);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -34,26 +36,51 @@
       background: var(--bg);
       color: var(--text);
       overflow-x: hidden;
-      line-height: 1.6;
+      line-height: 1.7;
     }
 
     .scanline {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      inset: 0;
       pointer-events: none;
-      z-index: 1000;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0, 0, 0, 0.03) 2px,
-        rgba(0, 0, 0, 0.03) 4px
-      );
+      z-index: 9999;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px);
     }
 
+    /* ===== NAV ===== */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 100;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(10px);
+      background: rgba(6, 0, 16, 0.8);
+      border-bottom: 1px solid rgba(112, 48, 255, 0.1);
+    }
+
+    .nav-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--accent2);
+      text-decoration: none;
+    }
+
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent2); }
+
+    /* ===== HERO ===== */
     .hero {
       min-height: 100vh;
       display: flex;
@@ -61,182 +88,285 @@
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 2rem;
+      padding: 6rem 2rem 4rem;
       position: relative;
       overflow: hidden;
     }
 
-    .hero::before {
-      content: '';
+    .hero-bg {
       position: absolute;
-      width: 600px;
-      height: 600px;
-      border-radius: 50%;
-      background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
-      top: 20%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      animation: pulse 4s ease-in-out infinite;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 30% 20%, var(--glow) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 80%, var(--glow2) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, var(--glow3) 0%, transparent 60%);
+      animation: bgPulse 8s ease-in-out infinite alternate;
     }
 
-    .hero::after {
-      content: '';
-      position: absolute;
-      width: 400px;
-      height: 400px;
-      border-radius: 50%;
-      background: radial-gradient(circle, var(--glow2) 0%, transparent 70%);
-      bottom: 10%;
-      right: 20%;
-      animation: pulse 5s ease-in-out infinite reverse;
+    @keyframes bgPulse {
+      0% { opacity: 0.6; transform: scale(1); }
+      100% { opacity: 1; transform: scale(1.05); }
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
-      50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
-    }
+    .hero-content { position: relative; z-index: 10; max-width: 800px; }
 
-    .hero-content {
-      position: relative;
-      z-index: 10;
+    .hero-badge {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--accent4);
+      background: rgba(255, 204, 0, 0.1);
+      border: 1px solid rgba(255, 204, 0, 0.3);
+      border-radius: 20px;
+      padding: 0.3rem 1rem;
+      margin-bottom: 1.5rem;
     }
 
     .logo {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 4rem;
-      font-weight: 700;
-      letter-spacing: -2px;
-      margin-bottom: 0.5rem;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      font-size: clamp(3rem, 8vw, 5rem);
+      font-weight: 800;
+      letter-spacing: -3px;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent3), var(--accent2));
+      background-size: 200% 200%;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 60px var(--glow);
+      animation: gradientShift 6s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
     }
 
     .subtitle {
       font-size: 1.2rem;
       color: var(--text-dim);
-      max-width: 500px;
-      margin: 0 auto 2rem;
+      max-width: 550px;
+      margin: 0 auto 2.5rem;
     }
 
-    .terminal-preview {
+    .terminal-demo {
       background: var(--bg-code);
-      border: 1px solid rgba(128, 64, 255, 0.3);
-      border-radius: 12px;
-      padding: 1.5rem;
+      border: 1px solid rgba(112, 48, 255, 0.25);
+      border-radius: 14px;
+      padding: 0;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       text-align: left;
-      max-width: 600px;
-      margin: 2rem auto;
-      position: relative;
+      max-width: 650px;
+      margin: 0 auto 3rem;
       overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px var(--glow3);
     }
 
-    .terminal-preview::before {
-      content: '● ● ●';
-      display: block;
-      margin-bottom: 1rem;
-      letter-spacing: 6px;
-      color: var(--accent);
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0.8rem 1rem;
+      background: rgba(112, 48, 255, 0.08);
+      border-bottom: 1px solid rgba(112, 48, 255, 0.15);
+    }
+
+    .terminal-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .terminal-dot.red { background: #ff5f57; }
+    .terminal-dot.yellow { background: #febc2e; }
+    .terminal-dot.green { background: #28c840; }
+
+    .terminal-title {
+      flex: 1;
+      text-align: center;
+      color: var(--text-dim);
       font-size: 0.7rem;
     }
 
-    .term-line { margin: 2px 0; white-space: pre; }
-    .term-prompt { color: var(--accent2); }
-    .term-cmd { color: var(--text); }
-    .term-output { color: var(--text-dim); }
-    .term-highlight { color: var(--accent4); }
-    .term-accent { color: var(--accent); }
-    .term-green { color: #50ff50; }
+    .terminal-body {
+      padding: 1.2rem 1.5rem;
+      min-height: 200px;
+    }
+
+    .term-line { margin: 1px 0; white-space: pre; line-height: 1.4; }
+    .t-prompt { color: var(--accent2); }
+    .t-cmd { color: var(--text); }
+    .t-dim { color: var(--text-dim); }
+    .t-accent { color: var(--accent); }
+    .t-green { color: #50ff80; }
+    .t-yellow { color: var(--accent4); }
+    .t-cyan { color: #00e8ff; }
+    .t-magenta { color: #ff50ff; }
+
+    .cursor-blink {
+      display: inline-block;
+      width: 8px;
+      height: 14px;
+      background: var(--accent2);
+      animation: blink 1s step-end infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
 
     .install-buttons {
       display: flex;
       gap: 1rem;
       justify-content: center;
       flex-wrap: wrap;
-      margin-top: 2rem;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.8rem 1.6rem;
+      padding: 0.85rem 1.8rem;
       border-radius: 8px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.85rem;
-      font-weight: 500;
+      font-weight: 600;
       text-decoration: none;
-      transition: all 0.2s;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       border: 1px solid transparent;
     }
 
     .btn-primary {
       background: linear-gradient(135deg, var(--accent), var(--accent3));
       color: white;
+      box-shadow: 0 4px 20px var(--glow);
     }
-
     .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px var(--glow);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 35px var(--glow);
     }
 
     .btn-secondary {
       background: transparent;
       color: var(--accent2);
+      border-color: rgba(0, 255, 200, 0.4);
+    }
+    .btn-secondary:hover {
+      background: rgba(0, 255, 200, 0.08);
+      transform: translateY(-2px);
       border-color: var(--accent2);
     }
 
-    .btn-secondary:hover {
-      background: rgba(0, 255, 200, 0.1);
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-dim);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    .btn-ghost:hover {
+      color: var(--text);
+      border-color: rgba(255, 255, 255, 0.3);
       transform: translateY(-2px);
     }
 
+    /* ===== STATS ===== */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      padding: 3rem 2rem;
+      flex-wrap: wrap;
+      border-top: 1px solid rgba(112, 48, 255, 0.1);
+      border-bottom: 1px solid rgba(112, 48, 255, 0.1);
+      background: rgba(13, 0, 26, 0.5);
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--accent2);
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* ===== FEATURES ===== */
     .features {
-      padding: 6rem 2rem;
+      padding: 7rem 2rem;
       max-width: 1200px;
       margin: 0 auto;
     }
 
     .section-title {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 2rem;
-      font-weight: 700;
+      font-size: 2.2rem;
+      font-weight: 800;
       text-align: center;
-      margin-bottom: 3rem;
-      color: var(--accent2);
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--accent2), var(--accent3));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .section-subtitle {
+      text-align: center;
+      color: var(--text-dim);
+      margin-bottom: 4rem;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 1.5rem;
     }
 
     .feature-card {
       background: var(--bg-card);
-      border: 1px solid rgba(128, 64, 255, 0.15);
-      border-radius: 12px;
+      border: 1px solid rgba(112, 48, 255, 0.12);
+      border-radius: 14px;
       padding: 2rem;
-      transition: all 0.3s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent3), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
     }
 
     .feature-card:hover {
-      border-color: var(--accent3);
+      border-color: rgba(112, 48, 255, 0.3);
       transform: translateY(-4px);
-      box-shadow: 0 8px 40px rgba(128, 64, 255, 0.15);
+      box-shadow: 0 12px 40px rgba(112, 48, 255, 0.12);
     }
 
-    .feature-icon {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-    }
+    .feature-card:hover::before { opacity: 1; }
+
+    .feature-icon { font-size: 2.2rem; margin-bottom: 1rem; }
 
     .feature-title {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 600;
       margin-bottom: 0.5rem;
       color: var(--accent2);
@@ -244,26 +374,121 @@
 
     .feature-desc {
       color: var(--text-dim);
-      font-size: 0.9rem;
+      font-size: 0.88rem;
+      line-height: 1.6;
     }
 
+    /* ===== SHOWCASE ===== */
+    .showcase {
+      padding: 7rem 2rem;
+      background: linear-gradient(180deg, transparent, rgba(13, 0, 26, 0.5), transparent);
+    }
+
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      max-width: 1100px;
+      margin: 0 auto;
+      align-items: center;
+    }
+
+    .showcase-text h3 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    .showcase-text p {
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+    }
+
+    .showcase-terminal {
+      background: var(--bg-code);
+      border: 1px solid rgba(112, 48, 255, 0.2);
+      border-radius: 10px;
+      padding: 1.2rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+    }
+
+    /* ===== THEMES ===== */
+    .themes-section {
+      padding: 7rem 2rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .themes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.2rem;
+    }
+
+    .theme-card {
+      background: var(--bg-code);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(112, 48, 255, 0.12);
+      transition: all 0.3s;
+    }
+
+    .theme-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(112, 48, 255, 0.3);
+    }
+
+    .theme-preview {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      padding: 1rem;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: 1px;
+    }
+
+    .theme-info {
+      padding: 0.8rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(112, 48, 255, 0.1);
+    }
+
+    .theme-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .theme-effects {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+
+    /* ===== DOCS ===== */
     .docs {
-      padding: 6rem 2rem;
+      padding: 7rem 2rem;
       max-width: 900px;
       margin: 0 auto;
     }
 
     .doc-section {
-      margin-bottom: 3rem;
+      margin-bottom: 4rem;
     }
 
     .doc-section h3 {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 1.3rem;
+      font-size: 1.4rem;
       color: var(--accent);
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
       padding-bottom: 0.5rem;
-      border-bottom: 1px solid rgba(255, 48, 128, 0.2);
+      border-bottom: 1px solid rgba(255, 32, 112, 0.15);
     }
 
     .doc-section p {
@@ -274,7 +499,7 @@
     code {
       font-family: 'JetBrains Mono', monospace;
       background: var(--bg-code);
-      padding: 0.15rem 0.4rem;
+      padding: 0.15rem 0.5rem;
       border-radius: 4px;
       font-size: 0.85em;
       color: var(--accent2);
@@ -282,207 +507,328 @@
 
     pre {
       background: var(--bg-code);
-      border: 1px solid rgba(128, 64, 255, 0.2);
-      border-radius: 8px;
+      border: 1px solid rgba(112, 48, 255, 0.15);
+      border-radius: 10px;
       padding: 1.5rem;
       overflow-x: auto;
-      margin: 1rem 0;
+      margin: 1.2rem 0;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      line-height: 1.5;
+      font-size: 0.82rem;
+      line-height: 1.6;
     }
 
-    pre code {
-      background: none;
-      padding: 0;
-    }
+    pre code { background: none; padding: 0; }
 
     .command-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 1rem 0;
+      margin: 1.2rem 0;
     }
 
     .command-table th, .command-table td {
-      padding: 0.7rem 1rem;
+      padding: 0.8rem 1rem;
       text-align: left;
-      border-bottom: 1px solid rgba(128, 64, 255, 0.1);
+      border-bottom: 1px solid rgba(112, 48, 255, 0.08);
     }
 
     .command-table th {
       font-family: 'JetBrains Mono', monospace;
       color: var(--accent2);
       font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .command-table td:first-child {
       font-family: 'JetBrains Mono', monospace;
       color: var(--accent);
+      font-size: 0.85rem;
     }
 
     .command-table td:last-child {
       color: var(--text-dim);
+      font-size: 0.88rem;
     }
 
-    .themes-showcase {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin: 1rem 0;
-    }
-
-    .theme-card {
-      background: var(--bg-code);
-      border-radius: 8px;
-      padding: 1rem;
-      text-align: center;
-      border: 1px solid rgba(128, 64, 255, 0.15);
-    }
-
-    .theme-name {
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-    }
-
-    .theme-preview {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
-      height: 3rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
-    }
-
+    /* ===== FOOTER ===== */
     footer {
       text-align: center;
-      padding: 3rem 2rem;
+      padding: 4rem 2rem;
       color: var(--text-dim);
       font-size: 0.85rem;
-      border-top: 1px solid rgba(128, 64, 255, 0.1);
+      border-top: 1px solid rgba(112, 48, 255, 0.08);
     }
 
-    footer a {
-      color: var(--accent2);
-      text-decoration: none;
+    footer a { color: var(--accent2); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 1rem;
     }
 
+    /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
-      .logo { font-size: 2.5rem; }
+      .logo { font-size: 2.8rem; letter-spacing: -1px; }
       .features-grid { grid-template-columns: 1fr; }
+      .showcase-grid { grid-template-columns: 1fr; }
+      .stats { gap: 1.5rem; }
+      .stat-value { font-size: 1.6rem; }
+      nav { padding: 0.8rem 1rem; }
+      .nav-links { gap: 1rem; }
     }
   </style>
 </head>
 <body>
   <div class="scanline"></div>
 
+  <nav>
+    <a href="#" class="nav-logo">adofai-cli</a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#themes">Themes</a>
+      <a href="#install">Install</a>
+      <a href="#docs">Docs</a>
+      <a href="https://github.com/3289david/adofai-cli">GitHub</a>
+    </div>
+  </nav>
+
   <section class="hero">
+    <div class="hero-bg"></div>
     <div class="hero-content">
+      <div class="hero-badge">v1.0.0 — Built with Rust</div>
       <h1 class="logo">ADOFAI CLI</h1>
       <p class="subtitle">
-        Cinematic terminal-based A Dance of Fire and Ice engine.
-        Play, edit, and create levels entirely in your terminal.
+        A cinematic terminal engine for A Dance of Fire and Ice.
+        Shader effects. 120 FPS. Vim editor. Single binary.
       </p>
 
-      <div class="terminal-preview">
-        <div class="term-line"><span class="term-prompt">$</span> <span class="term-cmd">adofai play level.adofai --theme neon</span></div>
-        <div class="term-line"></div>
-        <div class="term-line"><span class="term-output">╭─────────────────────────────────╮</span></div>
-        <div class="term-line"><span class="term-output">│</span>     <span class="term-accent">ADOFAI Terminal Engine</span>       <span class="term-output">│</span></div>
-        <div class="term-line"><span class="term-output">├─────────────────────────────────┤</span></div>
-        <div class="term-line"><span class="term-output">│</span> Song: <span class="term-highlight">My Song</span>                   <span class="term-output">│</span></div>
-        <div class="term-line"><span class="term-output">│</span> BPM:  <span class="term-green">180</span>                       <span class="term-output">│</span></div>
-        <div class="term-line"><span class="term-output">│</span> Theme: <span class="term-accent">neon</span>                    <span class="term-output">│</span></div>
-        <div class="term-line"><span class="term-output">╰─────────────────────────────────╯</span></div>
-        <div class="term-line"></div>
-        <div class="term-line">      <span style="color:#ff50ff">●</span>────<span style="color:#00ffc8">●</span>────<span style="color:#ff50ff">●</span></div>
-        <div class="term-line">                ╲</div>
-        <div class="term-line">                 <span style="color:#00ffc8">●</span></div>
-        <div class="term-line">                ╱</div>
-        <div class="term-line">      <span style="color:#ff50ff">●</span>────<span style="color:#00ffc8">●</span></div>
+      <div class="terminal-demo">
+        <div class="terminal-header">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <div class="terminal-title">adofai — Terminal</div>
+        </div>
+        <div class="terminal-body">
+          <div class="term-line"><span class="t-prompt">$</span> <span class="t-cmd">adofai play level.adofai --theme neon</span></div>
+          <div class="term-line"></div>
+          <div class="term-line"><span class="t-dim">  Terminal Demo - ADOFAI CLI</span>        <span class="t-yellow">BPM:240</span></div>
+          <div class="term-line"></div>
+          <div class="term-line">            <span class="t-magenta">◉</span></div>
+          <div class="term-line">           <span class="t-dim">╱</span></div>
+          <div class="term-line">     <span class="t-cyan">●</span><span class="t-dim">────</span><span class="t-cyan">●</span><span class="t-dim">────</span><span class="t-cyan">●</span><span class="t-dim">────</span><span class="t-cyan">●</span>        <span class="t-yellow">PERFECT!</span></div>
+          <div class="term-line">                     <span class="t-dim">╲</span></div>
+          <div class="term-line">                      <span class="t-cyan">●</span><span class="t-dim">────</span><span class="t-cyan">●</span></div>
+          <div class="term-line"></div>
+          <div class="term-line">  <span class="t-cyan">████████████████</span><span class="t-dim">░░░░░░░░░░░░░░░░</span></div>
+          <div class="term-line">  <span class="t-dim">Score:</span><span class="t-green">4800</span>   <span class="t-dim">Combo:</span><span class="t-cyan">48</span>             <span class="t-green">[PLAY]</span></div>
+        </div>
       </div>
 
       <div class="install-buttons">
-        <a href="#install" class="btn btn-primary">Install Now</a>
+        <a href="#install" class="btn btn-primary">Get Started</a>
         <a href="#docs" class="btn btn-secondary">Documentation</a>
-        <a href="https://github.com/3289david/adofai-cli" class="btn btn-secondary">GitHub</a>
+        <a href="https://github.com/3289david/adofai-cli" class="btn btn-ghost">GitHub</a>
       </div>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="stat">
+      <div class="stat-value">120</div>
+      <div class="stat-label">FPS Target</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">1.1MB</div>
+      <div class="stat-label">Binary Size</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">7</div>
+      <div class="stat-label">Themes</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">6</div>
+      <div class="stat-label">Particle Styles</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">20+</div>
+      <div class="stat-label">Events Supported</div>
     </div>
   </section>
 
   <section class="features" id="features">
     <h2 class="section-title">// Features</h2>
+    <p class="section-subtitle">Every feature is designed to push the limits of what's possible inside a terminal.</p>
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon">🎮</div>
         <div class="feature-title">Full ADOFAI Player</div>
-        <div class="feature-desc">Play any .adofai level in your terminal with perfect timing accuracy, orbit physics, and real-time scoring.</div>
+        <div class="feature-desc">Real orbit physics, multi-planet support, timing system with 25ms accuracy windows. Perfect/Great/Good/Early/Late/Miss judgement with combo tracking.</div>
       </div>
       <div class="feature-card">
         <div class="feature-icon">✏️</div>
-        <div class="feature-title">Vim-Style Editor</div>
-        <div class="feature-desc">Create and edit levels with vim-like keybindings, undo tree, mouse support, and real-time preview.</div>
+        <div class="feature-title">Vim-Style Map Editor</div>
+        <div class="feature-desc">6 editing modes, directional tile placement, event editing, branch-based undo tree, mouse support. Press Space to instantly test-play.</div>
       </div>
       <div class="feature-card">
         <div class="feature-icon">🎨</div>
-        <div class="feature-title">Shader-Like Effects</div>
-        <div class="feature-desc">Bloom, scanlines, CRT distortion, chromatic aberration, vignette, screen shake — all in your terminal.</div>
+        <div class="feature-title">Post-Processing Pipeline</div>
+        <div class="feature-desc">Bloom, scanlines, CRT chromatic aberration, vignette, glitch displacement, screen flash, motion blur — all running in your terminal.</div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">🔥</div>
+        <div class="feature-icon">✨</div>
         <div class="feature-title">Particle System</div>
-        <div class="feature-desc">Hit sparks, fire trails, ice crystals, rainbow particles — cinematic feedback for every input.</div>
+        <div class="feature-desc">6 styles with gravity, velocity, lifetime, and color interpolation. Spark, Fire, Ice, Hit, Trail, Rainbow — cinematic feedback on every input.</div>
       </div>
       <div class="feature-card">
         <div class="feature-icon">📹</div>
         <div class="feature-title">Cinematic Camera</div>
-        <div class="feature-desc">Smooth follow, zoom, rotation, pulse, and shake. Every ADOFAI camera event is supported.</div>
+        <div class="feature-desc">Smooth follow with exponential interpolation, zoom, rotation, beat-synced pulse, and screen shake with exponential decay.</div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">🖥️</div>
-        <div class="feature-title">120 FPS Rendering</div>
-        <div class="feature-desc">Custom framebuffer with diff rendering. Only changed cells are redrawn — buttery smooth at 120 FPS.</div>
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Diff Rendering Engine</div>
+        <div class="feature-desc">Custom framebuffer tracks every cell. Only changed pixels are written to the terminal. Achieves 120 FPS with minimal I/O overhead.</div>
       </div>
       <div class="feature-card">
         <div class="feature-icon">🎵</div>
         <div class="feature-title">Audio Engine</div>
-        <div class="feature-desc">Built-in audio playback with hitsounds. Supports MP3, WAV, OGG, and FLAC formats.</div>
+        <div class="feature-desc">Built-in audio playback (MP3, WAV, OGG, FLAC) with hitsound synthesis. Per-hit sine wave beeps at 800Hz.</div>
       </div>
       <div class="feature-card">
         <div class="feature-icon">⏪</div>
         <div class="feature-title">Replay System</div>
-        <div class="feature-desc">Record and replay your runs with slow motion, frame advance, and hit analysis.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🎭</div>
-        <div class="feature-title">7 Built-in Themes</div>
-        <div class="feature-desc">Neon, Retro, Minimal, Fire, Ice, Synthwave, Matrix — each with unique post-processing effects.</div>
+        <div class="feature-desc">Record inputs with timestamps. Replay with adjustable speed. Frame advance and hit accuracy graph.</div>
       </div>
       <div class="feature-card">
         <div class="feature-icon">📊</div>
         <div class="feature-title">Level Analyzer</div>
-        <div class="feature-desc">BPM graphs, angle distribution, density visualization, event summaries — understand any level at a glance.</div>
+        <div class="feature-desc">Angle distribution histograms, BPM range detection, density graphs, event summaries. Understand any level at a glance.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔤</div>
+        <div class="feature-title">Unicode Pixel Engine</div>
+        <div class="feature-desc">Block characters (█▓▒░), braille dots (⣿) for 2x resolution, half-block subpixels (▀▄), and gradient rendering.</div>
       </div>
       <div class="feature-card">
         <div class="feature-icon">🧩</div>
-        <div class="feature-title">Full .adofai Support</div>
-        <div class="feature-desc">Parses and generates real ADOFAI files. angleData, pathData, actions, decorations — everything.</div>
+        <div class="feature-title">Full .adofai Compatibility</div>
+        <div class="feature-desc">Reads and writes real ADOFAI files. Handles both angleData and pathData formats. Cleans trailing commas and comments.</div>
       </div>
       <div class="feature-card">
         <div class="feature-icon">📦</div>
-        <div class="feature-title">Single Binary</div>
-        <div class="feature-desc">Written in Rust. Zero runtime dependencies. Cross-platform. One binary, instant startup.</div>
+        <div class="feature-title">Single 1.1MB Binary</div>
+        <div class="feature-desc">Written in Rust with LTO. Zero runtime dependencies. Cross-platform: macOS, Linux, Windows. Instant startup.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="showcase">
+    <div class="showcase-grid">
+      <div class="showcase-text">
+        <h3>The Editor</h3>
+        <p>A full-featured map editor with vim-style modal editing. Navigate with hjkl, add tiles in any direction, edit events with commands, and instantly preview your level.</p>
+        <p>Branch-based undo tree means you never lose history — even after undo, your alternate branches are preserved.</p>
+      </div>
+      <div class="showcase-terminal">
+        <div class="term-line"><span class="t-dim"> ADOFAI Editor - demo.adofai [+]</span>    <span style="color:#64ff64;background:#1a4020;padding:0 4px;">INSERT</span></div>
+        <div class="term-line"><span class="t-dim"> Tile:12/33 BPM:200 Angle:45°</span></div>
+        <div class="term-line"></div>
+        <div class="term-line"><span class="t-dim">  ·  ·  ·  ·  ·  ·  ·  ·  ·</span></div>
+        <div class="term-line"><span class="t-dim">  ·  ·  </span><span class="t-cyan">●────●────</span><span class="t-yellow">[●]</span><span class="t-cyan">───●</span><span class="t-dim">  ·</span></div>
+        <div class="term-line"><span class="t-dim">  ·  ·  ·  ·  ·  ·  ·</span><span class="t-magenta">↺</span><span class="t-dim">╲  ·</span></div>
+        <div class="term-line"><span class="t-dim">  ·  ��  ·  ·  ·  ·  ·  ·</span><span class="t-cyan">●</span><span class="t-dim">  ·</span></div>
+        <div class="term-line"></div>
+        <div class="term-line"><span class="t-yellow"> Events</span></div>
+        <div class="term-line"><span class="t-dim">   SetSpeed beatsPerMinute:200</span></div>
+        <div class="term-line"><span class="t-dim">   Twirl</span></div>
+        <div class="term-line"></div>
+        <div class="term-line"><span class="t-dim"> r:right u:up l:left d:down ESC:back</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="themes-section" id="themes">
+    <h2 class="section-title">// Themes</h2>
+    <p class="section-subtitle">7 hand-crafted visual presets, each with unique post-processing effects.</p>
+    <div class="themes-grid">
+      <div class="theme-card">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #0a0014, #140028); color: #00ffc8;">
+          ◉──<span style="color:#ff50ff">●</span>──<span style="color:#00ffc8">●</span>──<span style="color:#ff50ff">●</span>──●
+        </div>
+        <div class="theme-info">
+          <span class="theme-name" style="color: #00ffc8;">neon</span>
+          <span class="theme-effects">Bloom + Vignette</span>
+        </div>
+      </div>
+      <div class="theme-card">
+        <div class="theme-preview" style="background: #000a00; color: #00c800; text-shadow: 0 0 5px #00ff00;">
+          ◉──●──●──●──●──●
+        </div>
+        <div class="theme-info">
+          <span class="theme-name" style="color: #00ff00;">retro</span>
+          <span class="theme-effects">Scanlines + CRT</span>
+        </div>
+      </div>
+      <div class="theme-card">
+        <div class="theme-preview" style="background: #141414; color: #c8c8c8;">
+          ◉──●──●──●──●──●
+        </div>
+        <div class="theme-info">
+          <span class="theme-name" style="color: #ffffff;">minimal</span>
+          <span class="theme-effects">None</span>
+        </div>
+      </div>
+      <div class="theme-card">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #140500, #200800); color: #ff7800; text-shadow: 0 0 5px #ff4000;">
+          ◉──●──●──●──●──●
+        </div>
+        <div class="theme-info">
+          <span class="theme-name" style="color: #ff7800;">fire</span>
+          <span class="theme-effects">Bloom + Vignette</span>
+        </div>
+      </div>
+      <div class="theme-card">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #050a19, #081020); color: #64c8ff; text-shadow: 0 0 5px #3090ff;">
+          ◉──●──●──●──●──●
+        </div>
+        <div class="theme-info">
+          <span class="theme-name" style="color: #64c8ff;">ice</span>
+          <span class="theme-effects">Bloom + Vignette</span>
+        </div>
+      </div>
+      <div class="theme-card">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #0f001e, #1a0030); color: #ff0080; text-shadow: 0 0 5px #ff0080;">
+          ◉──<span style="color:#8000ff">●</span>──<span style="color:#ff0080">●</span>──<span style="color:#8000ff">●</span>──●
+        </div>
+        <div class="theme-info">
+          <span class="theme-name" style="color: #ff0080;">synthwave</span>
+          <span class="theme-effects">Scanlines + Bloom</span>
+        </div>
+      </div>
+      <div class="theme-card">
+        <div class="theme-preview" style="background: #000500; color: #00ff41; text-shadow: 0 0 8px #00ff41; font-weight: bold;">
+          ◉──●──●──●──●──●
+        </div>
+        <div class="theme-info">
+          <span class="theme-name" style="color: #00ff41;">matrix</span>
+          <span class="theme-effects">All effects</span>
+        </div>
       </div>
     </div>
   </section>
 
   <section class="docs" id="install">
     <h2 class="section-title">// Installation</h2>
+    <p class="section-subtitle">Multiple ways to install — pick your favorite.</p>
 
     <div class="doc-section">
-      <h3>Homebrew (macOS/Linux)</h3>
-      <pre><code>brew tap danwoo/tap
+      <h3>Homebrew (macOS / Linux)</h3>
+      <pre><code>brew tap 3289david/tap
 brew install adofai-cli</code></pre>
     </div>
 
@@ -497,8 +843,8 @@ brew install adofai-cli</code></pre>
     </div>
 
     <div class="doc-section">
-      <h3>Binary (Download)</h3>
-      <p>Download the latest release for your platform from <a href="https://github.com/3289david/adofai-cli/releases" style="color: var(--accent2)">GitHub Releases</a>.</p>
+      <h3>Binary Download</h3>
+      <p>Pre-built binaries for macOS (ARM + Intel), Linux, and Windows are available on <a href="https://github.com/3289david/adofai-cli/releases" style="color: var(--accent2)">GitHub Releases</a>. Single file, zero dependencies.</p>
     </div>
   </section>
 
@@ -507,19 +853,19 @@ brew install adofai-cli</code></pre>
 
     <div class="doc-section">
       <h3>Quick Start</h3>
-      <pre><code># Create a new level
+      <pre><code># Create a new level at 180 BPM
 adofai new --bpm 180
 
-# Edit the level
+# Open the map editor
 adofai edit untitled.adofai
 
-# Play the level
-adofai play untitled.adofai
+# Play with the synthwave theme
+adofai play untitled.adofai --theme synthwave
 
-# Play with a theme
-adofai play level.adofai --theme neon
+# Watch it auto-play
+adofai play level.adofai --auto-play
 
-# Analyze a level
+# Full level analysis
 adofai analyze level.adofai</code></pre>
     </div>
 
@@ -528,12 +874,12 @@ adofai analyze level.adofai</code></pre>
       <table class="command-table">
         <tr><th>Command</th><th>Description</th></tr>
         <tr><td>play &lt;file&gt;</td><td>Play an ADOFAI level in the terminal</td></tr>
-        <tr><td>edit &lt;file&gt;</td><td>Open the map editor</td></tr>
+        <tr><td>edit &lt;file&gt;</td><td>Open the vim-style map editor</td></tr>
         <tr><td>new</td><td>Create a new empty level</td></tr>
-        <tr><td>render &lt;file&gt;</td><td>Render a level (auto-play capture)</td></tr>
-        <tr><td>replay &lt;file&gt;</td><td>View a saved replay</td></tr>
-        <tr><td>theme &lt;name&gt;</td><td>Preview and info about a theme</td></tr>
-        <tr><td>analyze &lt;file&gt;</td><td>Show level statistics and analysis</td></tr>
+        <tr><td>render &lt;file&gt;</td><td>Auto-play and capture output</td></tr>
+        <tr><td>replay &lt;file&gt;</td><td>View a saved replay file</td></tr>
+        <tr><td>theme &lt;name&gt;</td><td>Preview theme effects and info</td></tr>
+        <tr><td>analyze &lt;file&gt;</td><td>Show level statistics and graphs</td></tr>
       </table>
     </div>
 
@@ -541,159 +887,72 @@ adofai analyze level.adofai</code></pre>
       <h3>Play Controls</h3>
       <table class="command-table">
         <tr><th>Key</th><th>Action</th></tr>
-        <tr><td>Space / J / K / D / F</td><td>Hit (input)</td></tr>
-        <tr><td>Arrow keys</td><td>Hit (input)</td></tr>
+        <tr><td>Space / J / K / D / F</td><td>Hit (primary input)</td></tr>
+        <tr><td>Arrow keys</td><td>Hit (alternative input)</td></tr>
         <tr><td>P / Esc</td><td>Pause / Resume</td></tr>
-        <tr><td>R</td><td>Restart</td></tr>
+        <tr><td>R</td><td>Restart level</td></tr>
         <tr><td>A</td><td>Toggle auto-play</td></tr>
-        <tr><td>Q</td><td>Quit</td></tr>
-      </table>
-    </div>
-
-    <div class="doc-section">
-      <h3>Editor Controls</h3>
-      <table class="command-table">
-        <tr><th>Key</th><th>Action</th></tr>
-        <tr><td>h / j / k / l</td><td>Navigate tiles</td></tr>
-        <tr><td>a</td><td>Add tile</td></tr>
-        <tr><td>d / Delete</td><td>Delete tile</td></tr>
-        <tr><td>r / R</td><td>Rotate tile ±45°</td></tr>
-        <tr><td>t</td><td>Toggle twirl</td></tr>
-        <tr><td>i</td><td>Insert mode (directional)</td></tr>
-        <tr><td>e</td><td>Event edit mode</td></tr>
-        <tr><td>:</td><td>Command mode</td></tr>
-        <tr><td>Space / Tab</td><td>Preview (test play)</td></tr>
-        <tr><td>u</td><td>Undo</td></tr>
-        <tr><td>Ctrl+S</td><td>Save</td></tr>
-        <tr><td>Ctrl+Z / Ctrl+Y</td><td>Undo / Redo</td></tr>
-        <tr><td>+/-</td><td>Zoom in/out</td></tr>
-        <tr><td>Mouse scroll</td><td>Zoom</td></tr>
-        <tr><td>Mouse click</td><td>Select tile</td></tr>
+        <tr><td>Q / Ctrl+C</td><td>Quit</td></tr>
       </table>
     </div>
 
     <div class="doc-section">
       <h3>Editor Commands</h3>
-      <pre><code>:bpm 240          Set BPM at cursor
-:twirl            Toggle twirl at cursor
-:planet multi 3   Set multi-planet (3 planets)
-:song My Song     Set song title
-:artist Artist    Set artist name
-:offset 100       Set offset (ms)
-:w                Save
-:q                Quit (warns if unsaved)
-:wq               Save and quit
-:q!               Force quit</code></pre>
-    </div>
-
-    <div class="doc-section">
-      <h3>Themes</h3>
-      <div class="themes-showcase">
-        <div class="theme-card">
-          <div class="theme-preview" style="background: linear-gradient(135deg, #0a0014, #140028); color: #00ffc8;">
-            ●────●────●
-          </div>
-          <div class="theme-name" style="color: #00ffc8;">neon</div>
-        </div>
-        <div class="theme-card">
-          <div class="theme-preview" style="background: #000a00; color: #00c800;">
-            ●────●────●
-          </div>
-          <div class="theme-name" style="color: #00ff00;">retro</div>
-        </div>
-        <div class="theme-card">
-          <div class="theme-preview" style="background: #141414; color: #c8c8c8;">
-            ●────●────●
-          </div>
-          <div class="theme-name" style="color: #ffffff;">minimal</div>
-        </div>
-        <div class="theme-card">
-          <div class="theme-preview" style="background: #140500; color: #ff7800;">
-            ●────●────●
-          </div>
-          <div class="theme-name" style="color: #ff7800;">fire</div>
-        </div>
-        <div class="theme-card">
-          <div class="theme-preview" style="background: #050a19; color: #64c8ff;">
-            ●────●────●
-          </div>
-          <div class="theme-name" style="color: #64c8ff;">ice</div>
-        </div>
-        <div class="theme-card">
-          <div class="theme-preview" style="background: #0f001e; color: #ff0080;">
-            ●────●────●
-          </div>
-          <div class="theme-name" style="color: #ff0080;">synthwave</div>
-        </div>
-        <div class="theme-card">
-          <div class="theme-preview" style="background: #000500; color: #00ff41;">
-            ●────●────●
-          </div>
-          <div class="theme-name" style="color: #00ff41;">matrix</div>
-        </div>
-      </div>
+      <pre><code>:bpm 240             Set BPM at cursor position
+:twirl               Toggle twirl event
+:planet multi 3      Set multi-planet (3 planets)
+:song My Song        Set song title
+:artist DJ Name      Set artist name
+:offset 100          Set audio offset in milliseconds
+:w                   Save file
+:wq                  Save and quit
+:q                   Quit (warns if unsaved changes)
+:q!                  Force quit without saving
+:help                Show all available commands</code></pre>
     </div>
 
     <div class="doc-section">
       <h3>Supported Events</h3>
-      <p>ADOFAI CLI supports all major ADOFAI events:</p>
       <table class="command-table">
-        <tr><th>Event</th><th>Support</th></tr>
-        <tr><td>SetSpeed (BPM)</td><td>Full</td></tr>
-        <tr><td>Twirl</td><td>Full</td></tr>
-        <tr><td>MultiPlanet</td><td>Full</td></tr>
-        <tr><td>Flash</td><td>Full</td></tr>
-        <tr><td>MoveCamera</td><td>Full</td></tr>
-        <tr><td>ShakeScreen</td><td>Full</td></tr>
-        <tr><td>Bloom</td><td>Full</td></tr>
-        <tr><td>SetFilter</td><td>Full</td></tr>
-        <tr><td>SetTrackColor</td><td>Full</td></tr>
-        <tr><td>Pause</td><td>Full</td></tr>
-        <tr><td>Hold</td><td>Full</td></tr>
-        <tr><td>Checkpoint</td><td>Full</td></tr>
-        <tr><td>PositionTrack</td><td>Full</td></tr>
-        <tr><td>ScaleRadius</td><td>Full</td></tr>
-        <tr><td>Decorations</td><td>Parsed</td></tr>
+        <tr><th>Event</th><th>Status</th></tr>
+        <tr><td>SetSpeed (BPM/Multiplier)</td><td>Full support</td></tr>
+        <tr><td>Twirl</td><td>Full support</td></tr>
+        <tr><td>MultiPlanet</td><td>Full support</td></tr>
+        <tr><td>Flash</td><td>Full support</td></tr>
+        <tr><td>MoveCamera</td><td>Full support</td></tr>
+        <tr><td>ShakeScreen</td><td>Full support</td></tr>
+        <tr><td>Bloom</td><td>Full support</td></tr>
+        <tr><td>SetFilter</td><td>Full support</td></tr>
+        <tr><td>SetTrackColor</td><td>Full support</td></tr>
+        <tr><td>Pause / Hold / Checkpoint</td><td>Full support</td></tr>
+        <tr><td>PositionTrack / ScaleRadius</td><td>Full support</td></tr>
+        <tr><td>Decorations / Text / Background</td><td>Parsed &amp; preserved</td></tr>
       </table>
     </div>
 
     <div class="doc-section">
       <h3>Architecture</h3>
-      <pre><code>adofai-cli/
-├── src/
-│   ├── renderer/     Custom framebuffer + diff rendering
-│   │   ├── framebuffer    Cell-based terminal buffer
-│   │   ├── pipeline       Render pipeline orchestration
-│   │   ├── post_process   Bloom, CRT, scanlines, glitch
-│   │   ├── particles      Spark, fire, ice, rainbow
-│   │   └── unicode_pixel  Braille + block rendering
-│   ├── engine/       Game engine
-│   │   ├── game           Main game loop (120 FPS)
-│   │   ├── tile           Tile geometry + rendering
-│   │   ├── planet         Orbit physics + multi-planet
-│   │   ├── timing         Beat sync + hit accuracy
-│   │   └── input          Key + mouse handling
-│   ├── editor/       Map editor
-│   │   ├── editor_state   Full TUI editor with modes
-│   │   └── undo           Branch-based undo tree
-│   ├── parser/       .adofai file parser
-│   │   ├── adofai         Level file I/O
-│   │   └── events         All event type definitions
-│   ├── camera/       Cinematic camera system
-│   ├── effects/      Visual effects + themes
-│   ├── audio/        Rodio-based audio engine
-│   ├── replay/       Record/playback system
-│   └── cli/          CLI command handlers</code></pre>
+      <pre><code>Input → Engine → Camera → Renderer → PostProcess → FrameBuffer → Terminal
+          ↑                               ↑
+      TimingEngine                    Particles
+          ↑
+     .adofai Parser
+
+Source: ~5800 lines of Rust across 20 modules
+Binary: 1.1MB with LTO, single file, zero deps</code></pre>
     </div>
   </section>
 
   <footer>
+    <div class="footer-links">
+      <a href="https://github.com/3289david/adofai-cli">GitHub</a>
+      <a href="https://github.com/3289david/adofai-cli/releases">Releases</a>
+      <a href="https://github.com/3289david/adofai-cli/blob/master/CONTRIBUTING.md">Contributing</a>
+      <a href="https://github.com/3289david/adofai-cli/blob/master/LICENSE">MIT License</a>
+    </div>
     <p>
-      Built with Rust. Open source on
-      <a href="https://github.com/3289david/adofai-cli">GitHub</a>.
-    </p>
-    <p style="margin-top: 0.5rem;">
-      MIT License &middot; Made by danwoo
+      Made by <a href="https://github.com/3289david">3289david</a> &middot;
+      Inspired by <a href="https://store.steampowered.com/app/977950/">A Dance of Fire and Ice</a>
     </p>
   </footer>
 </body>

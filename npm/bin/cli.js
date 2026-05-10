@@ -24,7 +24,7 @@ function getBinaryPath() {
   }
 
   console.error("adofai binary not found. Run: npm run postinstall");
-  console.error("Or install via Homebrew: brew install danwoo/tap/adofai-cli");
+  console.error("Or install via Homebrew: brew install 3289david/tap/adofai-cli");
   process.exit(1);
 }
 
